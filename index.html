@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WoW Item List Converter</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1f2937; /* Dark background */
+            color: #f3f4f6;
+        }
+    </style>
+</head>
+<body class="p-4 sm:p-8 min-h-screen flex items-center justify-center">
+
+    <div class="w-full max-w-4xl bg-gray-800 p-6 sm:p-10 rounded-xl shadow-2xl border border-gray-700">
+        <h1 class="text-3xl font-bold text-yellow-300 pb-1">
+            WoW Item List Converter
+        </h1>
+        <!-- Creator Credit -->
+        <p class="text-sm text-gray-500 mb-6 border-b border-gray-700 pb-3">
+            Created by Syndrogo
+        </p>
+
+        <!-- Input Format Selector -->
+        <div class="mb-6 p-4 bg-gray-700 rounded-lg border border-gray-600">
+            <label class="block text-sm font-bold text-gray-300 mb-3">
+                Select Input Format
+            </label>
+            <div class="flex flex-wrap gap-4 text-sm">
+                <!-- AAA File moved to first and checked by default -->
+                <label class="inline-flex items-center text-gray-300 cursor-pointer">
+                    <input type="radio" name="inputFormat" value="aaa-file" checked
+                           class="form-radio h-4 w-4 text-blue-500 focus:ring-blue-500 transition duration-150" onchange="updateInputPlaceholder()">
+                    <span class="ml-2">AAA File (JSON)</span>
+                </label>
+                <!-- Renamed Saddlebag to JSON -->
+                <label class="inline-flex items-center text-gray-300 cursor-pointer">
+                    <input type="radio" name="inputFormat" value="json-data"
+                           class="form-radio h-4 w-4 text-blue-500 focus:ring-blue-500 transition duration-150" onchange="updateInputPlaceholder()">
+                    <span class="ml-2">JSON</span>
+                </label>
+                <label class="inline-flex items-center text-gray-300 cursor-pointer">
+                    <input type="radio" name="inputFormat" value="tsm-string"
+                           class="form-radio h-4 w-4 text-blue-500 focus:ring-blue-500 transition duration-150" onchange="updateInputPlaceholder()">
+                    <span class="ml-2">TSM Group String</span>
+                </label>
+                <label class="inline-flex items-center text-gray-300 cursor-pointer">
+                    <input type="radio" name="inputFormat" value="simple-list"
+                           class="form-radio h-4 w-4 text-blue-500 focus:ring-blue-500 transition duration-150" onchange="updateInputPlaceholder()">
+                    <span class="ml-2">Simple ID List (CSV)</span>
+                </label>
+            </div>
+        </div>
+
+        <!-- Group Name Input (Only relevant for TSM output) -->
+        <div class="mb-6">
+            <label for="groupName" class="block text-sm font-medium text-gray-300 mb-2">
+                TSM Group Name (Used for TSM output only)
+            </label>
+            <input type="text" id="groupName" value="WoW Housing items"
+                   class="w-full p-3 rounded-lg bg-gray-700 text-white border border-gray-600 focus:ring-yellow-500 focus:border-yellow-500 transition duration-150"
+                   placeholder="e.g., My Flipping List">
+        </div>
+
+        <!-- Data Input Area -->
+        <div class="mb-6">
+            <label for="jsonInput" class="block text-sm font-medium text-gray-300 mb-2">
+                Input Data
+            </label>
+            <textarea id="jsonInput" rows="10"
+                      class="w-full p-4 rounded-lg bg-gray-700 text-yellow-300 font-mono border border-gray-600 focus:ring-yellow-500 focus:border-yellow-500 transition duration-150"
+                      placeholder='Paste JSON here'></textarea>
+        </div>
+
+        <!-- Output Format Selector -->
+        <div class="mb-8 p-4 bg-gray-700 rounded-lg border border-gray-600">
+            <label class="block text-sm font-bold text-gray-300 mb-3">
+                Select Output Format
+            </label>
+            <div class="flex flex-wrap gap-4 text-sm">
+                <label class="inline-flex items-center text-gray-300 cursor-pointer">
+                    <input type="radio" name="outputFormat" value="tsm" checked
+                           class="form-radio h-4 w-4 text-yellow-500 focus:ring-yellow-500 transition duration-150">
+                    <span class="ml-2">TSM Group String</span>
+                </label>
+                <label class="inline-flex items-center text-gray-300 cursor-pointer">
+                    <input type="radio" name="outputFormat" value="simple"
+                           class="form-radio h-4 w-4 text-yellow-500 focus:ring-yellow-500 transition duration-150">
+                    <span class="ml-2">Simple ID List (CSV)</span>
+                </label>
+                <label class="inline-flex items-center text-gray-300 cursor-pointer">
+                    <input type="radio" name="outputFormat" value="aaa-file"
+                           class="form-radio h-4 w-4 text-yellow-500 focus:ring-yellow-500 transition duration-150">
+                    <span class="ml-2">AAA File (JSON)</span>
+                </label>
+            </div>
+        </div>
+
+
+        <!-- Conversion Button -->
+        <div class="mb-8">
+            <button onclick="convertFormat()"
+                    class="w-full bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-bold py-3 px-6 rounded-lg transition duration-200 shadow-lg shadow-yellow-500/50">
+                Generate Selected Format
+            </button>
+        </div>
+
+        <!-- Result Area -->
+        <div class="border-t border-gray-700 pt-6">
+            <label for="tsmOutput" class="block text-sm font-medium text-gray-300 mb-2">
+                Generated String (Copy this)
+            </label>
+            <div class="relative">
+                <textarea id="tsmOutput" rows="5" readonly
+                          class="w-full p-4 rounded-lg bg-gray-900 text-green-400 font-mono border border-gray-600 resize-none"></textarea>
+                <button onclick="copyToClipboard()"
+                        id="copyButton"
+                        class="absolute top-2 right-2 bg-gray-700 hover:bg-gray-600 text-gray-300 text-xs font-semibold py-1.5 px-3 rounded-md transition duration-150">
+                    Copy to Clipboard
+                </button>
+            </div>
+            <p id="message" class="text-sm text-center mt-3 h-4"></p>
+        </div>
+        
+        <!-- Credits & Contact -->
+        <div class="mt-8 pt-6 border-t border-gray-700 text-center">
+            <h3 class="text-xl font-semibold text-gray-300 mb-3">Credits & Contact</h3>
+            <p class="text-gray-400 text-sm">
+                Built for the community. Inspired by <a href="https://github.com/ff14-advanced-market-search/AzerothAuctionAssassin/" target="_blank" class="text-blue-400 hover:text-blue-300 underline">Azeroth Auction Assassin (AAA) on GitHub</a>.
+            </p>
+            <p class="text-gray-400 text-sm mt-1">
+                Contact: <span class="text-yellow-400 font-mono">@Syndrogo</span> on Discord.
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // Saddlebag Array Sample
+        const sampleSaddlebag = [
+          {
+            "itemID": 183,
+            "salesPerDay": 0.34,
+            "itemName": "Ethereal Soul-Trader",
+            "link": "https://saddlebagexchange.com/wow/item-data/183",
+            "undermineLink": "https://undermine.exchange/#us-illidan/82800-183",
+            "warcraftPetsLink": "https://www.warcraftpets.com/?id=183",
+            "homeMinPrice": 1287999.9,
+            "avgTSMPrice": 1199999.99,
+            "estimatedRegionMarketValue": 408000,
+            "percentChange": 7.33,
+            "state": "stable"
+          }
+        ];
+
+        // AAA File Sample
+        const sampleAAA = {
+          "239170": 100000, "239214": 100000, "242948": 100000, "243101": 100000, "243327": 100000, "243336": 100000
+        };
+        
+        // Show Message Utility
+        function showMessage(text, isError = false) {
+            const messageElement = document.getElementById('message');
+            messageElement.textContent = text;
+            messageElement.className = `text-sm text-center mt-3 h-4 ${isError ? 'text-red-400' : 'text-green-400'}`;
+        }
+
+        function getInputFormat() {
+            const radios = document.getElementsByName('inputFormat');
+            for (const radio of radios) {
+                if (radio.checked) {
+                    return radio.value;
+                }
+            }
+            return 'aaa-file'; // Default updated to AAA
+        }
+
+        function getSelectedFormat() {
+            const radios = document.getElementsByName('outputFormat');
+            for (const radio of radios) {
+                if (radio.checked) {
+                    return radio.value;
+                }
+            }
+            return 'tsm'; // Default
+        }
+
+        function parseInput(rawText, inputFormat) {
+            let itemIDs = [];
+            
+            if (inputFormat === 'json-data') {
+                // SADDLEBAG (Array) / Generic JSON
+                try {
+                    const data = JSON.parse(rawText);
+                    if (Array.isArray(data)) {
+                        itemIDs = data
+                            .map(item => item.itemID)
+                            .filter(id => id && !isNaN(id))
+                            .map(id => parseInt(id, 10));
+                            
+                        if (itemIDs.length === 0) {
+                             // Fallback: array of numbers
+                             itemIDs = data.filter(id => typeof id === 'number' || (typeof id === 'string' && id.match(/^\d+$/))).map(id => parseInt(id, 10));
+                        }
+                    } else {
+                        // Fallback for object pasted in Array mode
+                        itemIDs = Object.keys(data).filter(key => key.match(/^\d+$/)).map(key => parseInt(key, 10));
+                    }
+                    if (itemIDs.length === 0) throw new Error("No Item IDs found.");
+                } catch (e) {
+                    throw new Error("Invalid JSON Data format. " + e.message);
+                }
+
+            } else if (inputFormat === 'aaa-file') {
+                // AAA FILE (Object)
+                try {
+                    const data = JSON.parse(rawText);
+                    if (Array.isArray(data)) throw new Error("Expected a JSON Object (AAA Format), but found an Array.");
+                    
+                    itemIDs = Object.keys(data)
+                                    .filter(key => key.match(/^\d+$/))
+                                    .map(key => parseInt(key, 10));
+                    
+                    if (itemIDs.length === 0) throw new Error("No Item IDs found in keys.");
+                } catch (e) {
+                    throw new Error("Invalid AAA File format. " + e.message);
+                }
+
+            } else if (inputFormat === 'tsm-string') {
+                // TSM String
+                const itemMatches = rawText.match(/i:(\d+)/g);
+                if (itemMatches) {
+                    itemIDs = itemMatches.map(match => parseInt(match.substring(2), 10));
+                }
+                if (itemIDs.length === 0) {
+                     throw new Error("No valid Item IDs found in the TSM string format.");
+                }
+
+            } else if (inputFormat === 'simple-list') {
+                // Simple List
+                const rawIDs = rawText.split(/[\s,]+/); 
+                itemIDs = rawIDs.map(id => parseInt(id.trim(), 10)).filter(id => !isNaN(id));
+                if (itemIDs.length === 0) {
+                     throw new Error("No valid Item IDs found.");
+                }
+            }
+            
+            if (itemIDs.length === 0) {
+                throw new Error(`The input was parsed, but no valid numeric Item IDs were extracted.`);
+            }
+
+            return itemIDs;
+        }
+
+        function updateInputPlaceholder() {
+            const inputFormat = getInputFormat();
+            const jsonInput = document.getElementById('jsonInput');
+            const placeholder = {
+                'json-data': 'Paste JSON Array here (e.g., [{"itemID": 123, ...}])',
+                'aaa-file': 'Paste AAA File JSON here (e.g., {"123": 10000, "456": 5000})',
+                'tsm-string': "Paste TSM String here (e.g., group:MyGroup`i:12345,i:67890)",
+                'simple-list': "Paste comma or space separated list of IDs here (e.g., 12345, 67890 99999)"
+            };
+            jsonInput.placeholder = placeholder[inputFormat];
+            
+            // Populate samples based on selection if empty or switching
+            if (inputFormat === 'json-data') {
+                jsonInput.value = JSON.stringify(sampleSaddlebag, null, 2);
+            } else if (inputFormat === 'aaa-file') {
+                jsonInput.value = JSON.stringify(sampleAAA, null, 2);
+            } else {
+                jsonInput.value = '';
+            }
+        }
+
+        function convertFormat() {
+            const groupNameInput = document.getElementById('groupName').value.trim();
+            const rawText = document.getElementById('jsonInput').value.trim();
+            const tsmOutput = document.getElementById('tsmOutput');
+            const outputFormat = getSelectedFormat();
+            const inputFormat = getInputFormat();
+
+            tsmOutput.value = '';
+            showMessage('');
+
+            if (!rawText) {
+                showMessage("Please paste your data into the input box.", true);
+                return;
+            }
+
+            let itemIDs;
+            try {
+                itemIDs = parseInput(rawText, inputFormat);
+            } catch (e) {
+                showMessage(e.message, true);
+                return;
+            }
+            
+            const finalIDs = itemIDs.map(String).filter(id => id.match(/^\d+$/));
+            let resultString = '';
+
+            if (finalIDs.length === 0) {
+                showMessage("No valid Item IDs could be extracted for conversion.", true);
+                return;
+            }
+
+            // --- Conversion Logic based on selected output format ---
+            if (outputFormat === 'tsm') {
+                const safeGroupName = groupNameInput.replace(/`/g, '').trim() || "Generated Items";
+                const itemString = finalIDs.map(id => `i:${id}`).join(',');
+                resultString = `group:${safeGroupName}\`${itemString}`;
+                
+                if (document.getElementById('message').textContent === "") {
+                    showMessage(`Successfully generated TSM string for ${finalIDs.length} items. Ready to copy!`);
+                }
+
+            } else if (outputFormat === 'simple') {
+                resultString = finalIDs.join(',');
+                showMessage(`Successfully generated Simple ID List (CSV) for ${finalIDs.length} items. Ready to copy!`);
+
+            } else if (outputFormat === 'aaa-file') {
+                const aaaObject = {};
+                finalIDs.forEach(id => {
+                    aaaObject[id] = 0;
+                });
+                resultString = JSON.stringify(aaaObject, null, 2); 
+                showMessage(`Successfully generated AAA File (JSON) with 0 gold defaults for ${finalIDs.length} items. Ready to copy!`);
+            }
+
+            tsmOutput.value = resultString;
+        }
+
+        function copyToClipboard() {
+            const tsmOutput = document.getElementById('tsmOutput');
+            if (!tsmOutput.value) {
+                showMessage("Nothing to copy. Please generate the desired format first.", true);
+                return;
+            }
+
+            tsmOutput.select();
+            document.execCommand('copy');
+            
+            showMessage("String copied to clipboard!", false);
+
+            const button = document.getElementById('copyButton');
+            const originalText = button.textContent;
+            button.textContent = 'Copied!';
+            setTimeout(() => {
+                button.textContent = originalText;
+            }, 1500);
+        }
+
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', () => {
+            updateInputPlaceholder(); // Initialize placeholder and sample data
+            convertFormat(); // Initial conversion
+        });
+    </script>
+
+</body>
+</html>
