@@ -335,7 +335,8 @@
                 }
 
             } else if (outputFormat === 'tsm-search') {
-                resultString = finalIDs.map(id => `i:${id}`).join(',');
+                // TSM Search: i:123;i:456 (Using ; separator)
+                resultString = finalIDs.map(id => `i:${id}`).join(';');
                 showMessage(`Successfully generated TSM Search string for ${finalIDs.length} items. Ready to copy!`);
 
             } else if (outputFormat === 'simple') {
