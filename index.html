@@ -386,6 +386,10 @@
                     document.getElementById('jsonInput').value = text;
                     showMessage(`Loaded preset: ${name}`);
                     
+                    // Update Group Name with the file name (removing extension)
+                    const cleanName = name.replace(/\.(txt|json)$/i, '');
+                    document.getElementById('groupName').value = cleanName;
+                    
                     const trimmed = text.trim();
                     const radios = document.getElementsByName('inputFormat');
                     
