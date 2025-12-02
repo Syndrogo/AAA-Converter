@@ -65,9 +65,19 @@
                    placeholder="e.g., My Flipping List">
         </div>
 
+        <!-- Preset Lists Section (New Dynamic) -->
+        <div class="mb-2">
+            <label class="block text-sm font-medium text-gray-300 mb-2">
+                Load Preset List <span id="loadingStatus" class="text-xs text-yellow-500 ml-2"></span>
+            </label>
+            <div id="presetContainer" class="flex flex-wrap gap-2">
+                <!-- Buttons will be injected here automatically -->
+            </div>
+        </div>
+
         <!-- Data Input Area -->
         <div class="mb-6">
-            <label for="jsonInput" class="block text-sm font-medium text-gray-300 mb-2">
+            <label for="jsonInput" class="block text-sm font-medium text-gray-300 mb-2 mt-4">
                 Input Data
             </label>
             <textarea id="jsonInput" rows="10"
@@ -143,7 +153,19 @@
     </div>
 
     <script>
-        // Saddlebag Array Sample
+        // --- GITHUB CONFIGURATION ---
+        const githubConfig = {
+            owner: "Syndrogo",           // Your Username
+            repo: "AAA-Converter",       // Your Repo Name
+            folder: "list"               // The folder where you upload text files (create this in your repo!)
+        };
+
+        // Fallback files (Used if GitHub API fails or rate limit exceeded)
+        const fallbackFiles = [
+            { name: "Housing Items", path: "list/HousingItems.txt" },
+        ];
+
+        // --- SAMPLES ---
         const sampleSaddlebag = [
           {
             "itemID": 183,
@@ -160,12 +182,11 @@
           }
         ];
 
-        // AAA File Sample
         const sampleAAA = {
           "239170": 100000, "239214": 100000, "242948": 100000, "243101": 100000, "243327": 100000, "243336": 100000
         };
         
-        // Show Message Utility
+        // --- UTILITY ---
         function showMessage(text, isError = false) {
             const messageElement = document.getElementById('message');
             messageElement.textContent = text;
@@ -179,7 +200,7 @@
                     return radio.value;
                 }
             }
-            return 'aaa-file'; // Default updated to AAA
+            return 'aaa-file';
         }
 
         function getSelectedFormat() {
@@ -189,14 +210,13 @@
                     return radio.value;
                 }
             }
-            return 'tsm'; // Default
+            return 'tsm'; 
         }
 
         function parseInput(rawText, inputFormat) {
             let itemIDs = [];
             
             if (inputFormat === 'json-data') {
-                // SADDLEBAG (Array) / Generic JSON
                 try {
                     const data = JSON.parse(rawText);
                     if (Array.isArray(data)) {
@@ -206,11 +226,9 @@
                             .map(id => parseInt(id, 10));
                             
                         if (itemIDs.length === 0) {
-                             // Fallback: array of numbers
                              itemIDs = data.filter(id => typeof id === 'number' || (typeof id === 'string' && id.match(/^\d+$/))).map(id => parseInt(id, 10));
                         }
                     } else {
-                        // Fallback for object pasted in Array mode
                         itemIDs = Object.keys(data).filter(key => key.match(/^\d+$/)).map(key => parseInt(key, 10));
                     }
                     if (itemIDs.length === 0) throw new Error("No Item IDs found.");
@@ -219,7 +237,6 @@
                 }
 
             } else if (inputFormat === 'aaa-file') {
-                // AAA FILE (Object)
                 try {
                     const data = JSON.parse(rawText);
                     if (Array.isArray(data)) throw new Error("Expected a JSON Object (AAA Format), but found an Array.");
@@ -234,7 +251,6 @@
                 }
 
             } else if (inputFormat === 'tsm-string') {
-                // TSM String
                 const itemMatches = rawText.match(/i:(\d+)/g);
                 if (itemMatches) {
                     itemIDs = itemMatches.map(match => parseInt(match.substring(2), 10));
@@ -244,7 +260,6 @@
                 }
 
             } else if (inputFormat === 'simple-list') {
-                // Simple List
                 const rawIDs = rawText.split(/[\s,]+/); 
                 itemIDs = rawIDs.map(id => parseInt(id.trim(), 10)).filter(id => !isNaN(id));
                 if (itemIDs.length === 0) {
@@ -270,7 +285,6 @@
             };
             jsonInput.placeholder = placeholder[inputFormat];
             
-            // Populate samples based on selection if empty or switching
             if (inputFormat === 'json-data') {
                 jsonInput.value = JSON.stringify(sampleSaddlebag, null, 2);
             } else if (inputFormat === 'aaa-file') {
@@ -311,7 +325,6 @@
                 return;
             }
 
-            // --- Conversion Logic based on selected output format ---
             if (outputFormat === 'tsm') {
                 const safeGroupName = groupNameInput.replace(/`/g, '').trim() || "Generated Items";
                 const itemString = finalIDs.map(id => `i:${id}`).join(',');
@@ -322,7 +335,6 @@
                 }
 
             } else if (outputFormat === 'tsm-search') {
-                // TSM Search: i:123,i:456
                 resultString = finalIDs.map(id => `i:${id}`).join(',');
                 showMessage(`Successfully generated TSM Search string for ${finalIDs.length} items. Ready to copy!`);
 
@@ -362,10 +374,98 @@
             }, 1500);
         }
 
+        // --- DYNAMIC GITHUB LOADING ---
+        function loadPreset(url, name) {
+            showMessage(`Loading ${name}...`);
+            fetch(url)
+                .then(response => {
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                    return response.text();
+                })
+                .then(text => {
+                    document.getElementById('jsonInput').value = text;
+                    showMessage(`Loaded preset: ${name}`);
+                    
+                    const trimmed = text.trim();
+                    const radios = document.getElementsByName('inputFormat');
+                    
+                    if (trimmed.startsWith('{')) {
+                        for(const r of radios) if(r.value === 'aaa-file') r.checked = true;
+                    } else if (trimmed.startsWith('[')) {
+                        for(const r of radios) if(r.value === 'json-data') r.checked = true;
+                    }
+                })
+                .catch(e => {
+                    showMessage("Failed to load file: " + e.message, true);
+                });
+        }
+
+        async function fetchGitHubFiles() {
+            const container = document.getElementById('presetContainer');
+            const status = document.getElementById('loadingStatus');
+            container.innerHTML = '';
+            status.textContent = "(Scanning GitHub...)";
+
+            // GitHub Content API
+            const apiUrl = `https://api.github.com/repos/${githubConfig.owner}/${githubConfig.repo}/contents/${githubConfig.folder}`;
+
+            try {
+                const response = await fetch(apiUrl);
+                if (!response.ok) {
+                    if (response.status === 404) throw new Error("Folder not found.");
+                    if (response.status === 403) throw new Error("Rate limited.");
+                    throw new Error("API Error");
+                }
+                
+                const files = await response.json();
+                
+                // Filter for text or json files
+                const listFiles = files.filter(file => file.type === 'file' && (file.name.endsWith('.txt') || file.name.endsWith('.json')));
+
+                if (listFiles.length === 0) {
+                    status.textContent = "(No files found)";
+                    renderButtons(fallbackFiles); 
+                    return;
+                }
+
+                renderButtons(listFiles.map(f => ({ name: f.name, url: f.download_url })));
+                status.textContent = "";
+
+            } catch (error) {
+                console.warn("GitHub API failed:", error);
+                status.textContent = "(API unavailable - Using Fallback)";
+                renderButtons(fallbackFiles);
+            }
+        }
+
+        function renderButtons(files) {
+            const container = document.getElementById('presetContainer');
+            container.innerHTML = '';
+            
+            files.forEach(file => {
+                const btn = document.createElement('button');
+                // Remove extension for cleaner look
+                btn.textContent = file.name.replace(/\.(txt|json)$/, '');
+                btn.className = "bg-gray-600 hover:bg-gray-500 text-white font-medium py-1 px-3 rounded text-xs transition duration-150 border border-gray-500";
+                
+                // Handle both API objects (with .url) and fallback objects (with .path)
+                const targetUrl = file.url || file.path;
+                btn.onclick = () => loadPreset(targetUrl, file.name);
+                container.appendChild(btn);
+            });
+        }
+
         // Initialize on load
         document.addEventListener('DOMContentLoaded', () => {
-            updateInputPlaceholder(); // Initialize placeholder and sample data
-            convertFormat(); // Initial conversion
+            updateInputPlaceholder();
+            convertFormat(); 
+            
+            // --- AUTO GITHUB LOAD ---
+            if (githubConfig.owner !== "YOUR_USERNAME") {
+                fetchGitHubFiles();
+            } else {
+                renderButtons(fallbackFiles);
+            }
         });
     </script>
 
