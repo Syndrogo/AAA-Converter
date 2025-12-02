@@ -55,10 +55,10 @@
             </div>
         </div>
 
-        <!-- Group Name Input (Only relevant for TSM output) -->
-        <div class="mb-6">
+        <!-- Group Name Input (Only relevant for TSM Group output) -->
+        <div class="mb-6" id="groupNameContainer">
             <label for="groupName" class="block text-sm font-medium text-gray-300 mb-2">
-                TSM Group Name (Used for TSM output only)
+                TSM Group Name (Used for TSM Group String output)
             </label>
             <input type="text" id="groupName" value="WoW Housing items"
                    class="w-full p-3 rounded-lg bg-gray-700 text-white border border-gray-600 focus:ring-yellow-500 focus:border-yellow-500 transition duration-150"
@@ -85,6 +85,11 @@
                     <input type="radio" name="outputFormat" value="tsm" checked
                            class="form-radio h-4 w-4 text-yellow-500 focus:ring-yellow-500 transition duration-150">
                     <span class="ml-2">TSM Group String</span>
+                </label>
+                <label class="inline-flex items-center text-gray-300 cursor-pointer">
+                    <input type="radio" name="outputFormat" value="tsm-search"
+                           class="form-radio h-4 w-4 text-yellow-500 focus:ring-yellow-500 transition duration-150">
+                    <span class="ml-2">TSM Search String</span>
                 </label>
                 <label class="inline-flex items-center text-gray-300 cursor-pointer">
                     <input type="radio" name="outputFormat" value="simple"
@@ -313,8 +318,13 @@
                 resultString = `group:${safeGroupName}\`${itemString}`;
                 
                 if (document.getElementById('message').textContent === "") {
-                    showMessage(`Successfully generated TSM string for ${finalIDs.length} items. Ready to copy!`);
+                    showMessage(`Successfully generated TSM Group string for ${finalIDs.length} items. Ready to copy!`);
                 }
+
+            } else if (outputFormat === 'tsm-search') {
+                // TSM Search: i:123,i:456
+                resultString = finalIDs.map(id => `i:${id}`).join(',');
+                showMessage(`Successfully generated TSM Search string for ${finalIDs.length} items. Ready to copy!`);
 
             } else if (outputFormat === 'simple') {
                 resultString = finalIDs.join(',');
