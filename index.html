@@ -328,7 +328,7 @@
             if (outputFormat === 'tsm') {
                 const safeGroupName = groupNameInput.replace(/`/g, '').trim() || "Generated Items";
                 const itemString = finalIDs.map(id => `i:${id}`).join(',');
-                resultString = `group:${safeGroupName}\`${itemString}`;
+                resultString = `group:${safeGroupName}\`Items\`${itemString}`;
                 
                 if (document.getElementById('message').textContent === "") {
                     showMessage(`Successfully generated TSM Group string for ${finalIDs.length} items. Ready to copy!`);
